@@ -15,6 +15,7 @@
     justify-content: center;
     align-items: flex-start;
     min-height: 100vh;
+    font-size: 16px; /* Base font size for mobile */
   }
   #container {
     max-width: 420px;
@@ -39,29 +40,32 @@
     padding: 8px 16px;
     cursor: pointer;
     font-family: 'Orbitron', monospace, sans-serif;
-    font-size: 15px;
+    font-size: 16px;
     transition: background-color 0.3s ease;
   }
-  #refreshBtn:hover {
+  #refreshBtn:hover, #refreshBtn:active {
     background: #00ccbd;
   }
   h2 {
     margin-top: 0; margin-bottom: 15px;
     text-align: center;
     width: 100%;
+    font-size: 24px; /* Larger heading for mobile */
   }
   input, button, select {
     font-family: 'Orbitron', monospace, sans-serif;
     border-radius: 12px;
     border: none;
-    padding: 10px 15px;
+    padding: 12px 15px; /* Increased padding for touch */
     margin: 6px 0;
     background: #013343;
     color: #00fff7;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 16px; /* Larger text for mobile */
     outline: none;
     transition: background-color 0.3s ease;
+    width: 100%; /* Full width for easier tapping */
+    box-sizing: border-box;
   }
   input:focus, select:focus {
     background-color: #005f75;
@@ -73,12 +77,13 @@
     font-weight: 700;
     letter-spacing: 1px;
     margin-top: 10px;
+    min-width: 120px; /* Ensure tappable size */
   }
-  button:hover {
+  button:hover, button:active {
     background: #00ccbd;
   }
   label {
-    font-size: 13px;
+    font-size: 16px; /* Increased for readability */
     color: #00e5d0;
   }
   #credits {
@@ -105,13 +110,14 @@
   }
   #publicCodeList {
     margin-top: 10px;
-    font-size: 13px;
-    max-height: 80px;
+    font-size: 16px;
+    max-height: 120px; /* Increased for usability */
     overflow-y: auto;
     background: #00262e;
     padding: 8px 12px;
     border-radius: 12px;
     user-select: text;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
   }
   #displayUser {
     font-weight: 700;
@@ -133,14 +139,15 @@
   }
   #adminUserList, #adminBannedList {
     margin-top:10px;
-    max-height:100px;
+    max-height:120px; /* Increased for usability */
     overflow-y:auto;
-    font-size:13px;
+    font-size:16px;
     background:#022d30;
     padding:8px;
     border-radius:10px;
     user-select: text;
     white-space: pre-wrap;
+    -webkit-overflow-scrolling: touch;
   }
   .adminSection {
     margin-bottom: 20px;
@@ -173,7 +180,7 @@
       </div>
 
       <label for="spinCostInput">Spin Cost (credits):</label>
-      <input type="number" id="spinCostInput" value="50" min="1" max="500" />
+      <input type="number" id="spinCostInput" inputmode="numeric" value="50" min="1" max="500" />
 
       <button id="spinBtn">Spin</button>
 
@@ -188,7 +195,7 @@
       <label for="customCodeName">Create Public Redeem Code (3-10 chars):</label>
       <input type="text" id="customCodeName" placeholder="Code name" maxlength="10" />
       <label for="newCodeValue">Credits Value:</label>
-      <input type="number" id="newCodeValue" min="1" placeholder="Credits" />
+      <input type="number" id="newCodeValue" inputmode="numeric" min="1" placeholder="Credits" />
       <button onclick="createPublicCode()">Create Code</button>
 
       <hr style="margin:20px 0; border-color:#004852;" />
@@ -209,7 +216,7 @@
           <label for="adminUser">Target Username:</label><br />
           <input type="text" id="adminUser" placeholder="Target username" /><br /><br />
           <label for="adminAmount">Amount:</label><br />
-          <input type="number" id="adminAmount" placeholder="Credits amount" /><br /><br />
+          <input type="number" id="adminAmount" inputmode="numeric" placeholder="Credits amount" /><br /><br />
           <button onclick="adminAddCredits()">Add Credits</button>
           <button onclick="adminResetCredits()" style="margin-left:10px;">Reset Credits</button>
           <button onclick="adminResetRedeemCodes()" style="margin-left:10px;">Reset Redeem Codes</button>
@@ -231,6 +238,19 @@
         <div class="adminSection">
           <button onclick="adminViewBannedUsers()">View Banned Users</button>
           <div id="adminBannedList">(No banned users)</div>
+        </div>
+
+        <div class="adminSection">
+          <label for="importData">Import Game Data:</label><br />
+          <input type="file" id="importData" accept=".json" onchange="importStorageData(event)" /><br />
+        </div>
+
+        <div class="adminSection">
+          <label for="bulkCodeCount">Number of Codes to Create:</label><br />
+          <input type="number" id="bulkCodeCount" placeholder="Number of codes" min="1" max="200" /><br /><br />
+          <label for="bulkCodeValue">Credits per Code:</label><br />
+          <input type="number" id="bulkCodeValue" placeholder="Credits per code" min="1" /><br /><br />
+          <button onclick="adminCreateBulkCodes()">Create Bulk Codes</button>
         </div>
       </div>
     </div>
@@ -337,6 +357,56 @@
       alert('Your account has been deleted. Logging out.');
       logout();
     }
+  }
+
+  // Import storage data from JSON file
+  function importStorageData(event) {
+    const file = event.target.files[0];
+    if (!file) {
+      alert('Please select a JSON file.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        localStorage.setItem('slotGameUsers', data.users || '{}');
+        localStorage.setItem('slotGameRedeemCodes', data.codes || '{}');
+        localStorage.setItem('slotGameBannedUsers', data.bans || '[]');
+        syncUIWithStorage();
+        alert('Data imported successfully! Admin panel updated.');
+      } catch (error) {
+        alert('Error importing data: Invalid JSON file.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // Admin bulk create redeem codes
+  function adminCreateBulkCodes() {
+    const count = parseInt(document.getElementById('bulkCodeCount').value);
+    const value = parseInt(document.getElementById('bulkCodeValue').value);
+    if (isNaN(count) || count < 1 || count > 200) {
+      alert('Enter a valid number of codes (1–200).');
+      return;
+    }
+    if (isNaN(value) || value < 1) {
+      alert('Enter a valid credits value.');
+      return;
+    }
+
+    let newCodes = 0;
+    for (let i = 1; newCodes < count; i++) {
+      let code = `BULK${String(i).padStart(3, '0')}`; // e.g., BULK001, BULK002
+      if (!redeemCodes[code]) {
+        redeemCodes[code] = value;
+        newCodes++;
+      }
+    }
+
+    localStorage.setItem(REDEEM_KEY, JSON.stringify(redeemCodes));
+    alert(`Created ${count} redeem codes worth ${value} credits each!`);
+    syncUIWithStorage(); // Update UI
   }
 
   // Login button event
