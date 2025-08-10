@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Slot Game with Redeem Codes & Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron&display=swap');
+  body {
+    margin: 0; padding: 0;
+    background: linear-gradient(135deg, #050a0f, #002e3c);
+    color: #00fff7;
+    font-family: 'Orbitron', monospace, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+  #container {
+    max-width: 420px;
+    width: 100%;
+    background: #021f29dd;
+    border-radius: 20px;
+    padding: 20px 25px 35px;
+    box-shadow: 0 0 20px #00fff7aa;
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #refreshBtn {
+    align-self: flex-start;
+    margin-bottom: 15px;
+    background: #00fff7;
+    color: #002e3c;
+    font-weight: 700;
+    border-radius: 12px;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace, sans-serif;
+    font-size: 15px;
+    transition: background-color 0.3s ease;
+  }
+  #refreshBtn:hover {
+    background: #00ccbd;
+  }
+  h2 {
+    margin-top: 0; margin-bottom: 15px;
+    text-align: center;
+    width: 100%;
+  }
+  input, button, select {
+    font-family: 'Orbitron', monospace, sans-serif;
+    border-radius: 12px;
+    border: none;
+    padding: 10px 15px;
+    margin: 6px 0;
+    background: #013343;
+    color: #00fff7;
+    font-weight: 600;
+    font-size: 15px;
+    outline: none;
+    transition: background-color 0.3s ease;
+  }
+  input:focus, select:focus {
+    background-color: #005f75;
+  }
+  button {
+    cursor: pointer;
+    background: #00fff7;
+    color: #002e3c;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-top: 10px;
+  }
+  button:hover {
+    background: #00ccbd;
+  }
+  label {
+    font-size: 13px;
+    color: #00e5d0;
+  }
+  #credits {
+    font-size: 20px;
+    text-align: center;
+    margin: 15px 0 25px;
+  }
+  #slotReels {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    font-size: 48px;
+    letter-spacing: 10px;
+    margin-bottom: 20px;
+    user-select: none;
+  }
+  #slotReels span {
+    background: #004852;
+    padding: 18px 30px;
+    border-radius: 18px;
+    box-shadow: inset 0 0 10px #007f9e;
+    min-width: 70px;
+    text-align: center;
+  }
+  #publicCodeList {
+    margin-top: 10px;
+    font-size: 13px;
+    max-height: 80px;
+    overflow-y: auto;
+    background: #00262e;
+    padding: 8px 12px;
+    border-radius: 12px;
+    user-select: text;
+  }
+  #displayUser {
+    font-weight: 700;
+    color: #ff55aa;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  #adminPanel {
+    margin-top:30px;
+    border-top: 1px solid #00fff7;
+    padding-top: 20px;
+    text-align: left;
+    display:none;
+  }
+  #adminPanel h3 {
+    color: #ff55aa;
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+  #adminUserList, #adminBannedList {
+    margin-top:10px;
+    max-height:100px;
+    overflow-y:auto;
+    font-size:13px;
+    background:#022d30;
+    padding:8px;
+    border-radius:10px;
+    user-select: text;
+    white-space: pre-wrap;
+  }
+  .adminSection {
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+  <div id="container">
+    <!-- Refresh button on top -->
+    <button id="refreshBtn" title="Reload Page">Refresh</button>
+
+    <div id="loginSection">
+      <h2>Login or Register</h2>
+      <label for="usernameInput">Username:</label>
+      <input type="text" id="usernameInput" autocomplete="username" placeholder="Enter username" />
+      <label for="passwordInput">Password:</label>
+      <input type="password" id="passwordInput" autocomplete="current-password" placeholder="Enter password" />
+      <button id="loginBtn">Login</button>
+      <button id="registerBtn" style="margin-left:10px;">Register</button>
+    </div>
+
+    <div id="gameSection" style="display:none;">
+      <div id="displayUser"></div>
+      <div id="credits">Credits: 0</div>
+
+      <div id="slotReels">
+        <span id="reel1">❓</span>
+        <span id="reel2">❓</span>
+        <span id="reel3">❓</span>
+      </div>
+
+      <label for="spinCostInput">Spin Cost (credits):</label>
+      <input type="number" id="spinCostInput" value="50" min="1" max="500" />
+
+      <button id="spinBtn">Spin</button>
+
+      <hr style="margin:20px 0; border-color:#004852;" />
+
+      <label for="redeemInput">Redeem Code:</label>
+      <input type="text" id="redeemInput" placeholder="Enter redeem code" />
+      <button onclick="redeemCode()">Redeem</button>
+
+      <hr style="margin:20px 0; border-color:#004852;" />
+
+      <label for="customCodeName">Create Public Redeem Code (3-10 chars):</label>
+      <input type="text" id="customCodeName" placeholder="Code name" maxlength="10" />
+      <label for="newCodeValue">Credits Value:</label>
+      <input type="number" id="newCodeValue" min="1" placeholder="Credits" />
+      <button onclick="createPublicCode()">Create Code</button>
+
+      <hr style="margin:20px 0; border-color:#004852;" />
+
+      <div>
+        <strong>Available Public Codes:</strong>
+        <div id="publicCodeList">(No public codes available)</div>
+      </div>
+
+      <hr style="margin:25px 0; border-color:#004852;" />
+
+      <button onclick="logout()">Logout</button>
+
+      <div id="adminPanel">
+        <h3>Admin Panel</h3>
+        
+        <div class="adminSection">
+          <label for="adminUser">Target Username:</label><br />
+          <input type="text" id="adminUser" placeholder="Target username" /><br /><br />
+          <label for="adminAmount">Amount:</label><br />
+          <input type="number" id="adminAmount" placeholder="Credits amount" /><br /><br />
+          <button onclick="adminAddCredits()">Add Credits</button>
+          <button onclick="adminResetCredits()" style="margin-left:10px;">Reset Credits</button>
+          <button onclick="adminResetRedeemCodes()" style="margin-left:10px;">Reset Redeem Codes</button>
+          <button onclick="adminDeleteUser()" style="margin-left:10px; background:#ff5555; color:#fff;">Delete User</button>
+        </div>
+
+        <div class="adminSection">
+          <label for="banUserInput">Ban/Unban User:</label><br />
+          <input type="text" id="banUserInput" placeholder="Username to ban/unban" /><br /><br />
+          <button onclick="adminBanUser()">Ban User</button>
+          <button onclick="adminUnbanUser()" style="margin-left:10px;">Unban User</button>
+        </div>
+
+        <div class="adminSection">
+          <button onclick="adminViewUsers()">View All Users</button>
+          <div id="adminUserList">(No users loaded)</div>
+        </div>
+
+        <div class="adminSection">
+          <button onclick="adminViewBannedUsers()">View Banned Users</button>
+          <div id="adminBannedList">(No banned users)</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+  // Refresh button logic
+  document.getElementById('refreshBtn').onclick = () => location.reload();
+
+  // Admin credentials
+  const adminUsername = "SARITH";
+  const adminPassword = "SARITH@2013";
+
+  // Symbols for slots
+  const symbols = ['🍒','🍋','🍊','🍇','⭐','7️⃣'];
+
+  // Storage keys
+  const USERS_KEY = 'slotGameUsers';
+  const REDEEM_KEY = 'slotGameRedeemCodes';
+  const BANNED_KEY = 'slotGameBannedUsers';
+
+  // Globals
+  let currentUser = null;
+  let userCredits = 0;
+  let userData = {}; // All users data loaded
+  let redeemCodes = {}; // All redeem codes loaded
+  let bannedUsers = [];
+
+  // Load data from localStorage or initialize empty
+  function loadAllData() {
+    userData = JSON.parse(localStorage.getItem(USERS_KEY)) || {};
+    redeemCodes = JSON.parse(localStorage.getItem(REDEEM_KEY)) || {};
+    bannedUsers = JSON.parse(localStorage.getItem(BANNED_KEY)) || [];
+  }
+  loadAllData();
+
+  // Save data back to localStorage
+  function saveAllData() {
+    localStorage.setItem(USERS_KEY, JSON.stringify(userData));
+    localStorage.setItem(REDEEM_KEY, JSON.stringify(redeemCodes));
+    localStorage.setItem(BANNED_KEY, JSON.stringify(bannedUsers));
+  }
+
+  // Show game section and update UI
+  function showGameSection() {
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('gameSection').style.display = 'flex';
+    document.getElementById('gameSection').style.flexDirection = 'column';
+  }
+
+  // Update user and credits display
+  function updateUserDisplay() {
+    const displayUser = document.getElementById('displayUser');
+    displayUser.textContent = `User: ${currentUser}`;
+  }
+  function updateCreditsDisplay() {
+    const creditText = userCredits === Infinity ? '∞' : userCredits;
+    document.getElementById('credits').textContent = `Credits: ${creditText}`;
+  }
+
+  // Check if current user is admin and show admin panel
+  function checkAdmin() {
+    if(currentUser === adminUsername) {
+      document.getElementById('adminPanel').style.display = 'block';
+      document.getElementById('spinCostInput').max = 999999; // allow bigger spin cost for admin
+      userCredits = Infinity; // infinite credits for admin
+      updateCreditsDisplay();
+    } else {
+      document.getElementById('adminPanel').style.display = 'none';
+    }
+  }
+
+  // Save current user data credits to localStorage (except admin)
+  function saveUserData() {
+    if(currentUser !== adminUsername) {
+      userData[currentUser].credits = userCredits;
+      localStorage.setItem(USERS_KEY, JSON.stringify(userData));
+    }
+  }
+
+  // Sync UI with localStorage for current user
+  function syncUIWithStorage() {
+    // Reload data from localStorage
+    loadAllData();
+
+    // Update credits for current user (if not admin)
+    if (currentUser && currentUser !== adminUsername && userData[currentUser]) {
+      userCredits = userData[currentUser].credits || 0;
+      updateCreditsDisplay();
+    }
+
+    // Update public codes display
+    updatePublicCodesDisplay();
+
+    // Check if current user is banned
+    if (currentUser && bannedUsers.includes(currentUser)) {
+      alert('You have been banned. Logging out.');
+      logout();
+    }
+
+    // Check if current user was deleted
+    if (currentUser && !userData[currentUser] && currentUser !== adminUsername) {
+      alert('Your account has been deleted. Logging out.');
+      logout();
+    }
+  }
+
+  // Login button event
+  document.getElementById('loginBtn').onclick = () => {
+    const username = document.getElementById('usernameInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    if(!username || !password) {
+      alert('Please enter username and password.');
+      return;
+    }
+
+    if(bannedUsers.includes(username)) {
+      alert('This user is banned.');
+      return;
+    }
+
+    if(username === adminUsername && password === adminPassword) {
+      // Admin login - infinite credits
+      currentUser = username;
+      userCredits = Infinity;
+      showGameSection();
+      updateUserDisplay();
+      updateCreditsDisplay();
+      checkAdmin();
+      syncUIWithStorage(); // Sync UI after login
+      return;
+    }
+
+    // Normal user login
+    if(userData[username]) {
+      if(userData[username].password === password) {
+        currentUser = username;
+        userCredits = userData[username].credits || 1000;
+        showGameSection();
+        updateUserDisplay();
+        updateCreditsDisplay();
+        checkAdmin();
+        syncUIWithStorage(); // Sync UI after login
+      } else {
+        alert('Incorrect password.');
+      }
+    } else {
+      alert('User not found. Please register.');
+    }
+  };
+
+  // Register button event
+  document.getElementById('registerBtn').onclick = () => {
+    const username = document.getElementById('usernameInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    if(!username || !password) {
+      alert('Please enter username and password.');
+      return;
+    }
+    if(userData[username]) {
+      alert('Username already exists.');
+      return;
+    }
+    if(username === adminUsername) {
+      alert('This username is reserved.');
+      return;
+    }
+    if(bannedUsers.includes(username)) {
+      alert('This username is banned.');
+      return;
+    }
+
+    // Create new user with default 1000 credits
+    userData[username] = {password, credits: 1000};
+    localStorage.setItem(USERS_KEY, JSON.stringify(userData));
+    alert('Registration successful! You can now login.');
+  };
+
+  // Spin slots function
+  function spinSlots() {
+    const reel1 = document.getElementById('reel1');
+    const reel2 = document.getElementById('reel2');
+    const reel3 = document.getElementById('reel3');
+
+    // Simple random selection
+    const r1 = symbols[Math.floor(Math.random() * symbols.length)];
+    const r2 = symbols[Math.floor(Math.random() * symbols.length)];
+    const r3 = symbols[Math.floor(Math.random() * symbols.length)];
+
+    reel1.textContent = r1;
+    reel2.textContent = r2;
+    reel3.textContent = r3;
+
+    // Check win conditions - 3 same symbols
+    if(r1 === r2 && r2 === r3) {
+      let winnings = 0;
+      if(r1 === '7️⃣') winnings = 1000;
+      else if(r1 === '⭐') winnings = 500;
+      else winnings = 200;
+
+      if(userCredits !== Infinity) userCredits += winnings;
+      alert(`Jackpot! You won ${winnings} credits!`);
+      updateCreditsDisplay();
+      saveUserData();
+    }
+  }
+
+  // Spin button click event
+  document.getElementById('spinBtn').onclick = () => {
+    const spinCost = parseInt(document.getElementById('spinCostInput').value);
+    if(!spinCost || spinCost < 1) {
+      alert('Spin cost must be at least 1.');
+      return;
+    }
+    if(userCredits !== Infinity && userCredits < spinCost) {
+      alert('Not enough credits!');
+      return;
+    }
+    if(userCredits !== Infinity) {
+      userCredits -= spinCost;
+    }
+    updateCreditsDisplay();
+    spinSlots();
+    saveUserData();
+  };
+
+  // Redeem code function
+  function redeemCode() {
+    const codeInput = document.getElementById('redeemInput');
+    let code = codeInput.value.trim().toUpperCase();
+    if(!code) {
+      alert('Enter a redeem code.');
+      return;
+    }
+
+    if(!redeemCodes[code]) {
+      alert('Invalid or expired redeem code.');
+      return;
+    }
+
+    // Check if user already redeemed this code
+    if(userData[currentUser].redeemedCodes && userData[currentUser].redeemedCodes.includes(code)) {
+      alert('You already redeemed this code.');
+      return;
+    }
+
+    // Add credits
+    const creditAmount = redeemCodes[code];
+    if(userCredits !== Infinity) userCredits += creditAmount;
+    alert(`Redeemed code "${code}" for ${creditAmount} credits!`);
+
+    // Mark as redeemed
+    if(!userData[currentUser].redeemedCodes) userData[currentUser].redeemedCodes = [];
+    userData[currentUser].redeemedCodes.push(code);
+    saveUserData();
+
+    updateCreditsDisplay();
+    codeInput.value = '';
+    syncUIWithStorage(); // Sync UI after redeeming code
+  }
+
+  // Create public redeem code
+  function createPublicCode() {
+    const codeNameInput = document.getElementById('customCodeName');
+    const codeValueInput = document.getElementById('newCodeValue');
+
+    let codeName = codeNameInput.value.trim().toUpperCase();
+    const codeValue = parseInt(codeValueInput.value);
+
+    if(codeName.length < 3 || codeName.length > 10) {
+      alert('Code name must be between 3 and 10 characters.');
+      return;
+    }
+    if(!/^[A-Z0-9]+$/.test(codeName)) {
+      alert('Code name must contain only letters and numbers.');
+      return;
+    }
+    if(isNaN(codeValue) || codeValue < 1) {
+      alert('Credits value must be a positive number.');
+      return;
+    }
+    if(redeemCodes[codeName]) {
+      alert('Code name already exists.');
+      return;
+    }
+
+    redeemCodes[codeName] = codeValue;
+    localStorage.setItem(REDEEM_KEY, JSON.stringify(redeemCodes));
+    alert(`Public redeem code "${codeName}" created for ${codeValue} credits!`);
+
+    codeNameInput.value = '';
+    codeValueInput.value = '';
+    syncUIWithStorage(); // Sync UI after creating code
+  }
+
+  // Update public redeem codes display
+  function updatePublicCodesDisplay() {
+    const list = document.getElementById('publicCodeList');
+    const keys = Object.keys(redeemCodes);
+    if(keys.length === 0) {
+      list.textContent = '(No public codes available)';
+      return;
+    }
+    let html = '';
+    keys.forEach(code => {
+      html += `${code} : ${redeemCodes[code]} credits\n`;
+    });
+    list.textContent = html;
+  }
+  updatePublicCodesDisplay();
+
+  // Logout function
+  function logout() {
+    if(!confirm('Are you sure you want to logout?')) return;
+    currentUser = null;
+    userCredits = 0;
+    document.getElementById('gameSection').style.display = 'none';
+    document.getElementById('loginSection').style.display = 'block';
+    document.getElementById('usernameInput').value = '';
+    document.getElementById('passwordInput').value = '';
+  }
+
+  // Admin functions
+  function adminAddCredits() {
+    const target = document.getElementById('adminUser').value.trim();
+    const amount = parseInt(document.getElementById('adminAmount').value);
+    if(!target || isNaN(amount) || amount <= 0) {
+      alert('Enter valid target username and amount.');
+      return;
+    }
+    if(!userData[target]) {
+      alert('Target user not found.');
+      return;
+    }
+    if(target === adminUsername) {
+      alert('Cannot modify admin credits.');
+      return;
+    }
+    userData[target].credits = (userData[target].credits || 0) + amount;
+    localStorage.setItem(USERS_KEY, JSON.stringify(userData));
+    alert(`Added ${amount} credits to ${target}.`);
+    syncUIWithStorage(); // Sync UI after change
+  }
+
+  function adminResetCredits() {
+    const target = document.getElementById('adminUser').value.trim();
+    if(!target) {
+      alert('Enter target username.');
+      return;
+    }
+    if(!userData[target]) {
+      alert('Target user not found.');
+      return;
+    }
+    if(target === adminUsername) {
+      alert('Cannot reset admin credits.');
+      return;
+    }
+    userData[target].credits = 1000;
+    localStorage.setItem(USERS_KEY, JSON.stringify(userData));
+    alert(`Credits reset to 1000 for ${target}.`);
+    syncUIWithStorage(); // Sync UI after change
+  }
+
+  function adminResetRedeemCodes() {
+    const target = document.getElementById('adminUser').value.trim();
+    if(!target) {
+      alert('Enter target username.');
+      return;
+    }
+    if(!userData[target]) {
+      alert('Target user not found.');
+      return;
+    }
+    userData[target].redeemedCodes = [];
+    localStorage.setItem(USERS_KEY, JSON.stringify(userData));
+    alert(`Redeem codes reset for ${target}.`);
+    syncUIWithStorage(); // Sync UI after change
+  }
+
+  function adminDeleteUser() {
+    const target = document.getElementById('adminUser').value.trim();
+    if(!target) {
+      alert('Enter target username.');
+      return;
+    }
+    if(!userData[target]) {
+      alert('Target user not found.');
+      return;
+    }
+    if(target === adminUsername) {
+      alert('Cannot delete admin user.');
+      return;
+    }
+    if(!confirm(`Are you sure you want to delete user "${target}"? This action cannot be undone.`)) return;
+    delete userData[target];
+    localStorage.setItem(USERS_KEY, JSON.stringify(userData));
+    alert(`User ${target} deleted.`);
+    syncUIWithStorage(); // Sync UI after change
+  }
+
+  function adminBanUser() {
+    const userToBan = document.getElementById('banUserInput').value.trim();
+    if(!userToBan) {
+      alert('Enter username to ban.');
+      return;
+    }
+    if(userToBan === adminUsername) {
+      alert('Cannot ban admin.');
+      return;
+    }
+    if(!userData[userToBan]) {
+      alert('User not found.');
+      return;
+    }
+    if(bannedUsers.includes(userToBan)) {
+      alert('User already banned.');
+      return;
+    }
+    bannedUsers.push(userToBan);
+    localStorage.setItem(BANNED_KEY, JSON.stringify(bannedUsers));
+    alert(`User "${userToBan}" banned.`);
+    syncUIWithStorage(); // Sync UI after change
+  }
+
+  function adminUnbanUser() {
+    const userToUnban = document.getElementById('banUserInput').value.trim();
+    if(!userToUnban) {
+      alert('Enter username to unban.');
+      return;
+    }
+    const index = bannedUsers.indexOf(userToUnban);
+    if(index === -1) {
+      alert('User is not banned.');
+      return;
+    }
+    bannedUsers.splice(index,1);
+    localStorage.setItem(BANNED_KEY, JSON.stringify(bannedUsers));
+    alert(`User "${userToUnban}" unbanned.`);
+    syncUIWithStorage(); // Sync UI after change
+  }
+
+  function adminViewUsers() {
+    if(Object.keys(userData).length === 0) {
+      document.getElementById('adminUserList').textContent = '(No users)';
+      return;
+    }
+    let text = '';
+    for(const user in userData) {
+      text += `${user}: ${userData[user].credits || 0} credits\n`;
+    }
+    document.getElementById('adminUserList').textContent = text;
+    syncUIWithStorage(); // Optional: Sync UI after viewing
+  }
+
+  function adminViewBannedUsers() {
+    if(bannedUsers.length === 0) {
+      document.getElementById('adminBannedList').textContent = '(No banned users)';
+      return;
+    }
+    document.getElementById('adminBannedList').textContent = bannedUsers.join('\n');
+    syncUIWithStorage(); // Optional: Sync UI after viewing
+  }
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === USERS_KEY || event.key === REDEEM_KEY || event.key === BANNED_KEY) {
+      syncUIWithStorage(); // Sync UI for all relevant storage changes
+    }
+  });
+</script>
+
+</body>
+</html>
